@@ -79,7 +79,78 @@ def main() -> None:
             except Exception as exc:
                 console.print(f"[yellow]Spread unavailable: {exc}[/yellow]")
 
+    # ------------------------------------------------------------------
+    # 3. Strategy evaluation demo (read-only — no orders placed)
+    # ------------------------------------------------------------------
+    console.rule("[bold blue]Strategy Evaluation Demo")
+    _run_strategy_demo(markets, client)
+
     console.print("\n[green]Done.[/green]")
+
+
+def _run_strategy_demo(markets: list[dict], client: "PolymarketClient") -> None:
+    """Show how strategies evaluate markets — no orders are placed."""
+    from polymarket_bot.strategies import (
+        Action,
+        FairValueStrategy,
+        MarketMakingStrategy,
+        RiskConfig,
+        build_snapshot,
+    )
+
+    config = RiskConfig(
+        bankroll_usd=1_000.0,
+        max_position_usd=50.0,
+        min_edge=0.04,
+        kelly_fraction=0.25,
+        min_liquidity_usd=200.0,
+        max_spread=0.06,
+    )
+
+    # Example: fair-value strategy with a hypothetical 60% YES estimate
+    fair_value = FairValueStrategy(fair_prob=0.60, config=config)
+    mm_strategy = MarketMakingStrategy(half_spread=0.02, config=config)
+
+    result_table = Table(title="Strategy Signals", show_lines=True)
+    result_table.add_column("Market", style="cyan", max_width=40)
+    result_table.add_column("Strategy", style="dim")
+    result_table.add_column("Action", style="bold")
+    result_table.add_column("Price", justify="right")
+    result_table.add_column("Size $", justify="right")
+    result_table.add_column("Edge", justify="right")
+    result_table.add_column("Reason", style="dim", max_width=40)
+
+    for market in markets[:3]:
+        snapshot = build_snapshot(market, client.clob)
+        if snapshot is None:
+            continue
+
+        question_short = snapshot.question[:38] + "…" if len(snapshot.question) > 40 else snapshot.question
+
+        for strat in [fair_value, mm_strategy]:
+            sig = strat.evaluate(snapshot)
+            action_color = {
+                Action.BUY_YES: "[green]BUY YES[/green]",
+                Action.BUY_NO:  "[red]BUY NO[/red]",
+                Action.HOLD:    "[yellow]HOLD[/yellow]",
+                Action.SKIP:    "[dim]SKIP[/dim]",
+            }.get(sig.action, sig.action.value)
+
+            result_table.add_row(
+                question_short,
+                strat.name,
+                action_color,
+                f"{sig.price:.3f}" if sig.price else "—",
+                f"${sig.size_usd:.2f}" if sig.size_usd else "—",
+                f"{sig.edge:.3f}" if sig.edge else "—",
+                sig.reason,
+            )
+
+    console.print(result_table)
+    console.print(
+        "\n[bold yellow]Note:[/bold yellow] signals shown above are for evaluation only. "
+        "Implement order placement in your bot runner to act on them."
+    )
 
 
 def _print_order_book(book) -> None:
