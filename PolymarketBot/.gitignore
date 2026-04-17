@@ -7,3 +7,13 @@ dist/
 .pytest_cache/
 .ruff_cache/
 uv.lock
+
+npm-cache/
+node_modules/
+dist/
+build/
+*.log
+*.tmp
+.DS_Store
+.idea/
+.vscode/
