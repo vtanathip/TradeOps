@@ -1,0 +1,15 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // run_requests — web app writes, bot reads & updates
+    match /run_requests/{id} {
+      allow read, write: if true;  // TODO: lock down with auth in production
+    }
+
+    // signals — bot writes, web app reads
+    match /signals/{id} {
+      allow read, write: if true;  // TODO: lock down with auth in production
+    }
+  }
+}

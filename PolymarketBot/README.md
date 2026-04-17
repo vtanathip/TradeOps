@@ -1,18 +1,85 @@
 # PolymarketBot
 
-A Python bot for evaluating and trading on [Polymarket](https://polymarket.com) prediction markets. Covers market data fetching, strategy evaluation, and Kelly-based position sizing.
+A Python bot for evaluating and trading on [Polymarket](https://polymarket.com) prediction markets — with a React dashboard to configure runs, trigger the bot, and track results in real time via Firebase Firestore.
 
 ---
 
-## Requirements
+## Quick Start
 
-- Python 3.11+
-- [uv](https://docs.astral.sh/uv/) package manager
+### Python bot
 
 ```bash
-uv sync                    # install dependencies
-cp .env.example .env       # add your private key (optional for read-only)
-uv run polymarket-bot      # run the demo
+uv sync                              # install dependencies (includes firebase-admin)
+cp .env.example .env                 # fill in FIREBASE_CREDENTIALS_PATH
+uv run polymarket-bot                # one-shot demo (no Firebase needed)
+uv run polymarket-runner             # polling runner — watches Firestore for run requests
+```
+
+### Web dashboard
+
+```bash
+cd webapp
+npm install
+cp .env.example .env.local           # fill in VITE_FIREBASE_* values
+npm run dev                          # http://localhost:5173
+```
+
+### Firebase setup (first time)
+
+1. Go to [Firebase Console](https://console.firebase.google.com) → Create project
+2. Enable **Firestore Database** (start in test mode)
+3. **Bot credentials**: Project Settings → Service Accounts → Generate new private key → save as `firebase-credentials.json`, set `FIREBASE_CREDENTIALS_PATH` in `.env`
+4. **Web app credentials**: Project Settings → General → Your apps → Add web app → copy config values into `webapp/.env.local`
+5. Deploy Firestore rules: `firebase deploy --only firestore:rules` (requires [Firebase CLI](https://firebase.google.com/docs/cli))
+
+---
+
+## How It Works
+
+```text
+Web Dashboard (React+Vite)           Firestore                  Bot (Python)
+  TriggerPanel  ──write──▶  /run_requests  ◀──poll──  polymarket-runner
+  RunsTable     ◀─listen──  /signals       ──write──▶  firebase_writer.py
+  StatsPanel    ◀─listen──  /signals
+```
+
+1. Configure a strategy run in the dashboard and click **Run Strategy**
+2. A document is written to `/run_requests` with status `pending`
+3. `polymarket-runner` polls every 5 seconds, picks it up, and sets status to `running`
+4. The bot fetches active markets, evaluates each with the configured strategy, and writes each `TradeSignal` to `/signals`
+5. The dashboard updates live — no page refresh needed
+
+---
+
+## Firestore Collections
+
+| Collection | Written by | Read by | Purpose |
+| --- | --- | --- | --- |
+| `/run_requests` | Web app | Bot | Strategy run configuration + lifecycle status |
+| `/signals` | Bot | Web app | Individual `TradeSignal` records per market |
+
+**`/run_requests` document shape:**
+```json
+{
+  "status":     "pending | running | completed | failed",
+  "created_at": "<Timestamp>",
+  "config": {
+    "strategy":        "fair_value | market_making",
+    "market_limit":    10,
+    "fair_prob":       0.60,
+    "half_spread":     0.02,
+    "tail_cutoff":     0.05,
+    "resolution_days": 3,
+    "risk": {
+      "bankroll_usd": 1000, "max_position_usd": 100,
+      "min_edge": 0.04,     "kelly_fraction": 0.25,
+      "min_liquidity_usd": 500, "max_spread": 0.05
+    }
+  },
+  "signal_count": 12,
+  "started_at":   "<Timestamp>",
+  "completed_at": "<Timestamp>"
+}
 ```
 
 ---
