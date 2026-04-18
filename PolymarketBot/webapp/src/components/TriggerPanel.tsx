@@ -61,23 +61,24 @@ const STATUS_TEXT: Record<string, string> = {
   failed:    'text-red-400',
 }
 
-function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+function Field({ id, label, hint, children }: { id: string; label: string; hint?: string; children: React.ReactNode }) {
   return (
     <div>
       <div className="flex items-baseline justify-between mb-1.5">
-        <label className="label">{label}</label>
-        {hint && <span className="text-[10px] text-zinc-600">{hint}</span>}
+        <label htmlFor={id} className="label">{label}</label>
+        {hint && <span className="text-[10px] text-zinc-400" aria-hidden="true">{hint}</span>}
       </div>
       {children}
     </div>
   )
 }
 
-function NumInput({ value, onChange, step = 0.01, min = 0, max }: {
-  value: number; onChange: (v: number) => void; step?: number; min?: number; max?: number;
+function NumInput({ id, value, onChange, step = 0.01, min = 0, max }: {
+  id: string; value: number; onChange: (v: number) => void; step?: number; min?: number; max?: number;
 }) {
   return (
     <input
+      id={id}
       type="number"
       className="input mono"
       value={value}
@@ -103,10 +104,10 @@ function StrategyPill({ label, desc, active, onClick }: {
       }`}
     >
       <div className="flex items-center gap-2 mb-0.5">
-        <span className={`w-1.5 h-1.5 rounded-full ${active ? 'bg-emerald-500' : 'bg-zinc-600'}`} />
+        <span aria-hidden="true" className={`w-1.5 h-1.5 rounded-full ${active ? 'bg-emerald-500' : 'bg-zinc-600'}`} />
         <span className="text-xs font-semibold">{label}</span>
       </div>
-      <p className="text-[10px] text-zinc-600 pl-3.5">{desc}</p>
+      <p className="text-[10px] text-zinc-400 pl-3.5">{desc}</p>
     </button>
   )
 }
@@ -165,30 +166,30 @@ export default function TriggerPanel() {
           </div>
 
           {/* Markets to scan */}
-          <Field label="Markets to scan" hint="max 50">
-            <NumInput value={cfg.market_limit} step={1} min={1} max={50}
+          <Field id="market-limit" label="Markets to scan" hint="max 50">
+            <NumInput id="market-limit" value={cfg.market_limit} step={1} min={1} max={50}
               onChange={v => setTop('market_limit', v)} />
           </Field>
 
           {/* Strategy params */}
           {cfg.strategy === 'fair_value' && (
-            <Field label="YES probability estimate" hint="0.01 – 0.99">
-              <NumInput value={cfg.fair_prob} step={0.01} min={0.01} max={0.99}
+            <Field id="fair-prob" label="YES probability estimate" hint="0.01 – 0.99">
+              <NumInput id="fair-prob" value={cfg.fair_prob} step={0.01} min={0.01} max={0.99}
                 onChange={v => setTop('fair_prob', v)} />
             </Field>
           )}
           {cfg.strategy === 'market_making' && (
             <div className="grid grid-cols-3 gap-3">
-              <Field label="Half spread">
-                <NumInput value={cfg.half_spread} step={0.005} min={0.005} max={0.2}
+              <Field id="half-spread" label="Half spread">
+                <NumInput id="half-spread" value={cfg.half_spread} step={0.005} min={0.005} max={0.2}
                   onChange={v => setTop('half_spread', v)} />
               </Field>
-              <Field label="Tail cutoff">
-                <NumInput value={cfg.tail_cutoff} step={0.01} min={0.01} max={0.2}
+              <Field id="tail-cutoff" label="Tail cutoff">
+                <NumInput id="tail-cutoff" value={cfg.tail_cutoff} step={0.01} min={0.01} max={0.2}
                   onChange={v => setTop('tail_cutoff', v)} />
               </Field>
-              <Field label="Resolution days">
-                <NumInput value={cfg.resolution_days} step={1} min={1} max={30}
+              <Field id="resolution-days" label="Resolution days">
+                <NumInput id="resolution-days" value={cfg.resolution_days} step={1} min={1} max={30}
                   onChange={v => setTop('resolution_days', v)} />
               </Field>
             </div>
@@ -199,28 +200,28 @@ export default function TriggerPanel() {
             <div className="divider" />
             <p className="section-label mb-3">Risk Config</p>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              <Field label="Bankroll" hint="USD">
-                <NumInput value={cfg.risk.bankroll_usd} step={100} min={100}
+              <Field id="bankroll-usd" label="Bankroll" hint="USD">
+                <NumInput id="bankroll-usd" value={cfg.risk.bankroll_usd} step={100} min={100}
                   onChange={v => setRisk('bankroll_usd', v)} />
               </Field>
-              <Field label="Max position" hint="USD">
-                <NumInput value={cfg.risk.max_position_usd} step={10} min={10}
+              <Field id="max-position-usd" label="Max position" hint="USD">
+                <NumInput id="max-position-usd" value={cfg.risk.max_position_usd} step={10} min={10}
                   onChange={v => setRisk('max_position_usd', v)} />
               </Field>
-              <Field label="Min liquidity" hint="USD">
-                <NumInput value={cfg.risk.min_liquidity_usd} step={100} min={0}
+              <Field id="min-liquidity-usd" label="Min liquidity" hint="USD">
+                <NumInput id="min-liquidity-usd" value={cfg.risk.min_liquidity_usd} step={100} min={0}
                   onChange={v => setRisk('min_liquidity_usd', v)} />
               </Field>
-              <Field label="Min edge">
-                <NumInput value={cfg.risk.min_edge} step={0.01} min={0.01} max={0.5}
+              <Field id="min-edge" label="Min edge">
+                <NumInput id="min-edge" value={cfg.risk.min_edge} step={0.01} min={0.01} max={0.5}
                   onChange={v => setRisk('min_edge', v)} />
               </Field>
-              <Field label="Kelly fraction">
-                <NumInput value={cfg.risk.kelly_fraction} step={0.05} min={0.05} max={1}
+              <Field id="kelly-fraction" label="Kelly fraction">
+                <NumInput id="kelly-fraction" value={cfg.risk.kelly_fraction} step={0.05} min={0.05} max={1}
                   onChange={v => setRisk('kelly_fraction', v)} />
               </Field>
-              <Field label="Max spread">
-                <NumInput value={cfg.risk.max_spread} step={0.01} min={0.01} max={0.5}
+              <Field id="max-spread" label="Max spread">
+                <NumInput id="max-spread" value={cfg.risk.max_spread} step={0.01} min={0.01} max={0.5}
                   onChange={v => setRisk('max_spread', v)} />
               </Field>
             </div>
@@ -229,7 +230,7 @@ export default function TriggerPanel() {
           <button type="submit" className="btn-run" disabled={loading}>
             {loading ? (
               <span className="flex items-center justify-center gap-2">
-                <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg aria-hidden="true" className="w-3.5 h-3.5 animate-spin" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
                   <circle cx="8" cy="8" r="6" strokeOpacity=".25" />
                   <path d="M14 8a6 6 0 0 0-6-6" />
                 </svg>
@@ -254,7 +255,7 @@ export default function TriggerPanel() {
               <div key={run.id} className="surface-inset p-3 group">
                 <div className="flex items-center justify-between gap-2 mb-2">
                   <div className="flex items-center gap-1.5">
-                    <span className={`status-dot ${STATUS_DOT[run.status] ?? 'bg-zinc-600'}`} />
+                    <span aria-hidden="true" className={`status-dot ${STATUS_DOT[run.status] ?? 'bg-zinc-600'}`} />
                     <span className={`text-[11px] font-semibold uppercase tracking-wide ${STATUS_TEXT[run.status] ?? 'text-zinc-500'}`}>
                       {run.status}
                     </span>

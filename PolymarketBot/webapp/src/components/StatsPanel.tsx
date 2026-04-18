@@ -130,16 +130,16 @@ export default function StatsPanel() {
           <div className="px-4 py-3 border-b border-zinc-800">
             <p className="section-label">By strategy</p>
           </div>
-          <table className="w-full text-xs">
+          <table className="w-full text-xs" aria-label="Performance by strategy">
             <thead>
               <tr className="border-b border-zinc-800/60">
-                <th className="px-4 py-2.5 text-left text-[10px] font-semibold text-zinc-600 uppercase tracking-widest">Strategy</th>
-                <th className="px-4 py-2.5 text-right text-[10px] font-semibold text-zinc-600 uppercase tracking-widest">Total</th>
-                <th className="px-4 py-2.5 text-right text-[10px] font-semibold text-zinc-600 uppercase tracking-widest">Yes</th>
-                <th className="px-4 py-2.5 text-right text-[10px] font-semibold text-zinc-600 uppercase tracking-widest">No</th>
-                <th className="px-4 py-2.5 text-right text-[10px] font-semibold text-zinc-600 uppercase tracking-widest">Skip%</th>
-                <th className="px-4 py-2.5 text-right text-[10px] font-semibold text-zinc-600 uppercase tracking-widest">Edge</th>
-                <th className="px-4 py-2.5 text-right text-[10px] font-semibold text-zinc-600 uppercase tracking-widest">$</th>
+                <th scope="col" className="px-4 py-2.5 text-left text-[10px] font-semibold text-zinc-400 uppercase tracking-widest">Strategy</th>
+                <th scope="col" className="px-4 py-2.5 text-right text-[10px] font-semibold text-zinc-400 uppercase tracking-widest">Total</th>
+                <th scope="col" className="px-4 py-2.5 text-right text-[10px] font-semibold text-zinc-400 uppercase tracking-widest">Yes</th>
+                <th scope="col" className="px-4 py-2.5 text-right text-[10px] font-semibold text-zinc-400 uppercase tracking-widest">No</th>
+                <th scope="col" className="px-4 py-2.5 text-right text-[10px] font-semibold text-zinc-400 uppercase tracking-widest">Skip%</th>
+                <th scope="col" className="px-4 py-2.5 text-right text-[10px] font-semibold text-zinc-400 uppercase tracking-widest">Edge</th>
+                <th scope="col" className="px-4 py-2.5 text-right text-[10px] font-semibold text-zinc-400 uppercase tracking-widest">$</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800/40">
@@ -175,7 +175,7 @@ export default function StatsPanel() {
                   <div className="flex-1 min-w-0">
                     <p className="text-xs text-zinc-300 truncate" title={s.question}>{s.question}</p>
                     <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className={`status-dot ${s.action === 'BUY_YES' ? 'bg-emerald-400' : 'bg-red-400'}`} />
+                      <span aria-hidden="true" className={`status-dot ${s.action === 'BUY_YES' ? 'bg-emerald-400' : 'bg-red-400'}`} />
                       <span className={`text-[10px] font-semibold ${s.action === 'BUY_YES' ? 'text-emerald-500' : 'text-red-500'}`}>
                         {s.action}
                       </span>

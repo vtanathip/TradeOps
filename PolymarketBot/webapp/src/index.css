@@ -42,7 +42,7 @@
            placeholder-zinc-600 w-full transition-all duration-150;
   }
   .label {
-    @apply block text-[11px] font-medium text-zinc-500 mb-1.5 tracking-wide uppercase;
+    @apply block text-[11px] font-medium text-zinc-400 mb-1.5 tracking-wide uppercase;
   }
   select.input {
     @apply cursor-pointer;
@@ -72,7 +72,7 @@
 
   /* Section label */
   .section-label {
-    @apply text-[10px] font-semibold text-zinc-600 uppercase tracking-widest;
+    @apply text-[10px] font-semibold text-zinc-400 uppercase tracking-widest;
   }
 
   /* Divider */

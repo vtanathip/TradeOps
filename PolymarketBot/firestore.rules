@@ -2,14 +2,17 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // run_requests — web app writes, bot reads & updates
+    // Only the authorised owner email can read or write any collection.
+    // The Cloud Function uses the Admin SDK which bypasses these rules entirely.
+
     match /run_requests/{id} {
-      allow read, write: if true;  // TODO: lock down with auth in production
+      allow read, write: if request.auth != null
+        && request.auth.token.email == 'tanathip.se@gmail.com';
     }
 
-    // signals — bot writes, web app reads
     match /signals/{id} {
-      allow read, write: if true;  // TODO: lock down with auth in production
+      allow read, write: if request.auth != null
+        && request.auth.token.email == 'tanathip.se@gmail.com';
     }
   }
 }

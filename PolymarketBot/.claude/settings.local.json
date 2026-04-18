@@ -8,7 +8,12 @@
       "Bash(npm run *)",
       "Bash(firebase deploy *)",
       "Bash(firebase functions:secrets:set POLYMARKET_PRIVATE_KEY)",
-      "Bash(firebase functions:delete onRunRequest --region us-central1 --force)"
+      "Bash(firebase functions:delete onRunRequest --region us-central1 --force)",
+      "Bash(grep -E \"\\\\.\\(txt|json|md|yml|yaml|cfg\\)$\")",
+      "Bash(node -e ' *)",
+      "Bash(grep -E \"^viem$|^ethers$\")",
+      "Bash(git add *)",
+      "Bash(git rebase *)"
     ]
   }
 }
