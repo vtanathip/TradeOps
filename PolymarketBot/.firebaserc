@@ -1,7 +1,6 @@
 {
   "projects": {
-    "default": "polymarketbot",
-    "staging": "polymarketbot-65e0a"
+    "default": "polymarketbot-65e0a"
   },
   "targets": {},
   "etags": {}

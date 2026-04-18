@@ -3,92 +3,93 @@
 @tailwind utilities;
 
 @layer base {
-  * {
-    @apply border-zinc-800;
+  :root {
+    --bg:        #0e0f10;
+    --bg-1:      #151617;
+    --bg-2:      #1b1c1d;
+    --bg-3:      #222325;
+    --line:      #2a2b2d;
+    --line-2:    #343537;
+    --text:      #ececec;
+    --text-2:    #a6a7a9;
+    --text-3:    #6f7073;
+    --accent:    #34d399;
+    --accent-dim:#0f3b2c;
+    --danger:    #f87171;
+    --danger-dim:#3a1818;
+    --warn:      #f5b961;
+    --warn-dim:  #3a2b15;
+    --info:      #7dd3fc;
+    --radius:    6px;
+    --font-ui:   'Inter', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
   }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    overflow: hidden;
+  }
+
   body {
-    @apply bg-zinc-950 text-zinc-100 antialiased;
-    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    font-family: var(--font-ui);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 13px;
+    line-height: 1.4;
+    -webkit-font-smoothing: antialiased;
   }
-  ::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
-  }
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  ::-webkit-scrollbar-thumb {
-    @apply bg-zinc-700 rounded-full;
-  }
+
+  #root { height: 100vh; width: 100vw; overflow: hidden; }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-3); }
+
   input[type='number']::-webkit-inner-spin-button,
-  input[type='number']::-webkit-outer-spin-button {
-    opacity: 0.4;
-  }
+  input[type='number']::-webkit-outer-spin-button { opacity: 0.4; }
+  input[type='number'] { -moz-appearance: textfield; }
+
+  button { font-family: inherit; font-size: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+  input, select { font-family: inherit; font-size: inherit; color: inherit; }
 }
 
 @layer components {
-  /* Surfaces */
-  .surface {
-    @apply bg-zinc-900 border border-zinc-800 rounded-xl;
-  }
-  .surface-inset {
-    @apply bg-zinc-800/40 border border-zinc-700/50 rounded-lg;
-  }
-
-  /* Form elements */
-  .input {
-    @apply bg-zinc-800/60 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100
-           focus:outline-none focus:ring-1 focus:ring-emerald-500/60 focus:border-emerald-500/40
-           placeholder-zinc-600 w-full transition-all duration-150;
-  }
-  .label {
-    @apply block text-[11px] font-medium text-zinc-400 mb-1.5 tracking-wide uppercase;
-  }
-  select.input {
-    @apply cursor-pointer;
-  }
-
-  /* Buttons */
-  .btn-run {
-    @apply w-full py-2.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600
-           text-black text-sm font-semibold transition-colors duration-150
-           disabled:opacity-40 disabled:cursor-not-allowed;
-  }
-
-  /* Badges */
-  .badge {
-    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold tracking-wide;
-  }
-
-  /* Status dot */
-  .status-dot {
-    @apply inline-block w-1.5 h-1.5 rounded-full;
-  }
-
-  /* Mono numbers */
   .mono {
-    @apply font-mono tabular-nums;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
   }
 
-  /* Section label */
-  .section-label {
-    @apply text-[10px] font-semibold text-zinc-400 uppercase tracking-widest;
+  .label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-3);
   }
 
-  /* Divider */
-  .divider {
-    @apply border-t border-zinc-800 my-5;
-  }
-
-  /* Nav item */
-  .nav-item {
-    @apply flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium
-           transition-colors duration-100 cursor-pointer;
-  }
-  .nav-item-active {
-    @apply bg-zinc-800 text-zinc-100;
-  }
-  .nav-item-inactive {
-    @apply text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900;
+  .kbd {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    padding: 1px 5px;
+    border: 1px solid var(--line-2);
+    border-radius: 3px;
+    color: var(--text-2);
+    background: var(--bg-2);
   }
 }
+
+@keyframes pulse-ring {
+  0%   { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.6); }
+  70%  { box-shadow: 0 0 0 6px rgba(52, 211, 153, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); }
+}
+.pulse { animation: pulse-ring 1.8s infinite; }
+
+@keyframes row-in {
+  from { background: rgba(52, 211, 153, 0.12); }
+  to   { background: transparent; }
+}
+.row-in { animation: row-in 1.2s ease-out; }
