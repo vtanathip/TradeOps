@@ -3,7 +3,12 @@
     "allow": [
       "WebFetch(domain:docs.polymarket.com)",
       "Bash(uv sync *)",
-      "Bash(uv run *)"
+      "Bash(uv run *)",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(firebase deploy *)",
+      "Bash(firebase functions:secrets:set POLYMARKET_PRIVATE_KEY)",
+      "Bash(firebase functions:delete onRunRequest --region us-central1 --force)"
     ]
   }
 }

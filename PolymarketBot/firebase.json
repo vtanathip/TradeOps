@@ -6,7 +6,7 @@
     {
       "source": "functions",
       "codebase": "default",
-      "ignore": ["node_modules", "lib", ".env"]
+      "ignore": ["node_modules", ".env"]
     }
   ],
   "hosting": {
