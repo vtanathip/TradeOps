@@ -2,7 +2,23 @@ import { useState, useEffect } from 'react'
 import { collection, onSnapshot, query, orderBy, limit } from 'firebase/firestore'
 import { db } from '../firebase'
 
-const ACTION_STYLES = {
+type ActionType = 'BUY_YES' | 'BUY_NO' | 'HOLD' | 'SKIP'
+
+interface Signal {
+  id:             string;
+  run_timestamp?: { toDate: () => Date };
+  question?:      string;
+  condition_id?:  string;
+  strategy?:      string;
+  action?:        ActionType;
+  yes_price?:     number;
+  price?:         number;
+  size_usd?:      number;
+  edge?:          number;
+  reason?:        string;
+}
+
+const ACTION_STYLES: Record<ActionType, string> = {
   BUY_YES: 'bg-green-900 text-green-300',
   BUY_NO:  'bg-red-900  text-red-300',
   HOLD:    'bg-yellow-900 text-yellow-300',
@@ -12,7 +28,7 @@ const ACTION_STYLES = {
 const PAGE_SIZE = 50
 
 export default function RunsTable() {
-  const [signals,  setSignals]  = useState([])
+  const [signals,  setSignals]  = useState<Signal[]>([])
   const [strategy, setStrategy] = useState('all')
   const [action,   setAction]   = useState('all')
   const [search,   setSearch]   = useState('')
@@ -24,11 +40,11 @@ export default function RunsTable() {
       limit(500)
     )
     return onSnapshot(q, snap => {
-      setSignals(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+      setSignals(snap.docs.map(d => ({ id: d.id, ...d.data() } as Signal)))
     })
   }, [])
 
-  const strategies = ['all', ...new Set(signals.map(s => s.strategy).filter(Boolean))]
+  const strategies = ['all', ...new Set(signals.map(s => s.strategy).filter(Boolean))] as string[]
   const actions    = ['all', 'BUY_YES', 'BUY_NO', 'HOLD', 'SKIP']
 
   const filtered = signals.filter(s => {
@@ -101,7 +117,7 @@ export default function RunsTable() {
                 </td>
                 <td className="px-4 py-2.5 text-gray-400 text-xs">{s.strategy}</td>
                 <td className="px-4 py-2.5">
-                  <span className={`badge ${ACTION_STYLES[s.action] ?? 'bg-gray-800 text-gray-400'}`}>
+                  <span className={`badge ${s.action ? (ACTION_STYLES[s.action] ?? 'bg-gray-800 text-gray-400') : 'bg-gray-800 text-gray-400'}`}>
                     {s.action}
                   </span>
                 </td>

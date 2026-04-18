@@ -2,17 +2,41 @@ import { useState, useEffect } from 'react'
 import { collection, addDoc, onSnapshot, query, orderBy, limit, serverTimestamp } from 'firebase/firestore'
 import { db } from '../firebase'
 
-// ── Default config (mirrors bot RiskConfig defaults) ─────────────────────────
-const DEFAULT_CONFIG = {
+interface RiskConfigForm {
+  bankroll_usd:      number;
+  max_position_usd:  number;
+  min_edge:          number;
+  kelly_fraction:    number;
+  min_liquidity_usd: number;
+  max_spread:        number;
+}
+
+interface RunConfig {
+  strategy:        'fair_value' | 'market_making';
+  market_limit:    number;
+  fair_prob:       number;
+  half_spread:     number;
+  tail_cutoff:     number;
+  resolution_days: number;
+  risk:            RiskConfigForm;
+}
+
+interface RunRequest {
+  id:            string;
+  status:        'pending' | 'running' | 'completed' | 'failed';
+  created_at?:   { toDate: () => Date };
+  config?:       RunConfig;
+  signal_count?: number;
+  error?:        string;
+}
+
+const DEFAULT_CONFIG: RunConfig = {
   strategy:        'fair_value',
   market_limit:    10,
-  // fair_value params
   fair_prob:       0.60,
-  // market_making params
   half_spread:     0.02,
   tail_cutoff:     0.05,
   resolution_days: 3,
-  // shared risk config
   risk: {
     bankroll_usd:      1000,
     max_position_usd:  100,
@@ -23,14 +47,14 @@ const DEFAULT_CONFIG = {
   },
 }
 
-const STATUS_STYLES = {
+const STATUS_STYLES: Record<string, string> = {
   pending:   'bg-yellow-900 text-yellow-300',
   running:   'bg-blue-900 text-blue-300',
   completed: 'bg-green-900 text-green-300',
   failed:    'bg-red-900 text-red-300',
 }
 
-function Field({ label, children }) {
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
       <label className="label">{label}</label>
@@ -39,7 +63,15 @@ function Field({ label, children }) {
   )
 }
 
-function NumInput({ value, onChange, step = 0.01, min = 0, max }) {
+function NumInput({
+  value, onChange, step = 0.01, min = 0, max,
+}: {
+  value:    number;
+  onChange: (v: number) => void;
+  step?:    number;
+  min?:     number;
+  max?:     number;
+}) {
   return (
     <input
       type="number"
@@ -54,11 +86,10 @@ function NumInput({ value, onChange, step = 0.01, min = 0, max }) {
 }
 
 export default function TriggerPanel() {
-  const [cfg, setCfg]       = useState(DEFAULT_CONFIG)
-  const [runs, setRuns]     = useState([])
+  const [cfg, setCfg]         = useState<RunConfig>(DEFAULT_CONFIG)
+  const [runs, setRuns]       = useState<RunRequest[]>([])
   const [loading, setLoading] = useState(false)
 
-  // Live listener on recent run requests
   useEffect(() => {
     const q = query(
       collection(db, 'run_requests'),
@@ -66,14 +97,17 @@ export default function TriggerPanel() {
       limit(20)
     )
     return onSnapshot(q, snap => {
-      setRuns(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+      setRuns(snap.docs.map(d => ({ id: d.id, ...d.data() } as RunRequest)))
     })
   }, [])
 
-  const setRisk  = (key, val) => setCfg(c => ({ ...c, risk: { ...c.risk, [key]: val } }))
-  const setTop   = (key, val) => setCfg(c => ({ ...c, [key]: val }))
+  const setRisk = (key: keyof RiskConfigForm, val: number) =>
+    setCfg(c => ({ ...c, risk: { ...c.risk, [key]: val } }))
 
-  async function handleSubmit(e) {
+  const setTop = <K extends keyof RunConfig>(key: K, val: RunConfig[K]) =>
+    setCfg(c => ({ ...c, [key]: val }))
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     try {
@@ -90,17 +124,16 @@ export default function TriggerPanel() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-      {/* ── Config form ─────────────────────────────────────────────────── */}
+      {/* Config form */}
       <div className="card">
         <h2 className="text-sm font-semibold text-gray-300 mb-4">Configure Run</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
 
-          {/* Strategy selector */}
           <Field label="Strategy">
             <select
               className="input"
               value={cfg.strategy}
-              onChange={e => setTop('strategy', e.target.value)}
+              onChange={e => setTop('strategy', e.target.value as RunConfig['strategy'])}
             >
               <option value="fair_value">Fair Value</option>
               <option value="market_making">Market Making</option>
@@ -112,7 +145,6 @@ export default function TriggerPanel() {
               onChange={v => setTop('market_limit', v)} />
           </Field>
 
-          {/* Strategy-specific params */}
           {cfg.strategy === 'fair_value' && (
             <Field label="Your probability estimate for YES (fair_prob)">
               <NumInput value={cfg.fair_prob} step={0.01} min={0.01} max={0.99}
@@ -134,7 +166,6 @@ export default function TriggerPanel() {
             </Field>
           </>)}
 
-          {/* Risk config */}
           <div className="border-t border-gray-800 pt-4">
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Risk Config</p>
             <div className="grid grid-cols-2 gap-3">
@@ -171,7 +202,7 @@ export default function TriggerPanel() {
         </form>
       </div>
 
-      {/* ── Run history ─────────────────────────────────────────────────── */}
+      {/* Run history */}
       <div className="card flex flex-col">
         <h2 className="text-sm font-semibold text-gray-300 mb-4">Run History</h2>
         {runs.length === 0

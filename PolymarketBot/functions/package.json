@@ -1,0 +1,24 @@
+{
+  "name": "polymarket-functions",
+  "version": "1.0.0",
+  "private": true,
+  "main": "lib/index.js",
+  "engines": { "node": "20" },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "deploy": "firebase deploy --only functions",
+    "runner": "ts-node -r dotenv/config src/runner.ts"
+  },
+  "dependencies": {
+    "@polymarket/clob-client": "^5.8.1",
+    "firebase-admin": "^12.0.0",
+    "firebase-functions": "^6.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "dotenv": "^16.0.0",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.4.0"
+  }
+}

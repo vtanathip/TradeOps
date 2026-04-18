@@ -3,14 +3,16 @@ import TriggerPanel from './components/TriggerPanel'
 import RunsTable    from './components/RunsTable'
 import StatsPanel   from './components/StatsPanel'
 
-const TABS = [
-  { id: 'run',     label: '▶  Run'     },
+type TabId = 'run' | 'signals' | 'stats'
+
+const TABS: { id: TabId; label: string }[] = [
+  { id: 'run',     label: '▶  Run'      },
   { id: 'signals', label: '📋  Signals' },
   { id: 'stats',   label: '📊  Stats'   },
 ]
 
 export default function App() {
-  const [tab, setTab] = useState('run')
+  const [tab, setTab] = useState<TabId>('run')
 
   return (
     <div className="min-h-screen flex flex-col">

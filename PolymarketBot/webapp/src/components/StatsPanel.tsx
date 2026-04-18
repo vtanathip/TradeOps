@@ -2,7 +2,33 @@ import { useState, useEffect } from 'react'
 import { collection, onSnapshot, query, orderBy, limit } from 'firebase/firestore'
 import { db } from '../firebase'
 
-function StatCard({ label, value, sub, accent }) {
+interface Signal {
+  id:             string;
+  run_timestamp?: { toDate: () => Date };
+  question?:      string;
+  strategy?:      string;
+  action?:        string;
+  edge?:          number;
+  size_usd?:      number;
+}
+
+interface StrategyGroup {
+  total:  number;
+  buyYes: number;
+  buyNo:  number;
+  skip:   number;
+  edges:  number[];
+  usd:    number;
+}
+
+interface StatCardProps {
+  label:   string;
+  value:   React.ReactNode;
+  sub?:    string;
+  accent?: string;
+}
+
+function StatCard({ label, value, sub, accent }: StatCardProps) {
   return (
     <div className="card">
       <p className="text-xs text-gray-500 mb-1">{label}</p>
@@ -12,18 +38,18 @@ function StatCard({ label, value, sub, accent }) {
   )
 }
 
-function pct(n, total) {
+function pct(n: number, total: number): string {
   if (!total) return '—'
   return `${((n / total) * 100).toFixed(1)}%`
 }
 
-function avg(arr) {
+function avg(arr: number[]): number | null {
   if (!arr.length) return null
   return arr.reduce((a, b) => a + b, 0) / arr.length
 }
 
 export default function StatsPanel() {
-  const [signals, setSignals] = useState([])
+  const [signals, setSignals] = useState<Signal[]>([])
 
   useEffect(() => {
     const q = query(
@@ -32,7 +58,7 @@ export default function StatsPanel() {
       limit(1000)
     )
     return onSnapshot(q, snap => {
-      setSignals(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+      setSignals(snap.docs.map(d => ({ id: d.id, ...d.data() } as Signal)))
     })
   }, [])
 
@@ -44,31 +70,28 @@ export default function StatsPanel() {
     )
   }
 
-  // ── Overall stats ──────────────────────────────────────────────────
   const total    = signals.length
   const buyYes   = signals.filter(s => s.action === 'BUY_YES')
   const buyNo    = signals.filter(s => s.action === 'BUY_NO')
   const skipped  = signals.filter(s => s.action === 'SKIP')
   const traded   = [...buyYes, ...buyNo]
-  const avgEdge  = avg(traded.map(s => s.edge).filter(Boolean))
+  const avgEdge  = avg(traded.map(s => s.edge).filter((e): e is number => e != null))
   const totalUsd = traded.reduce((sum, s) => sum + (s.size_usd ?? 0), 0)
 
-  // ── Per-strategy breakdown ─────────────────────────────────────────
-  const byStrategy = {}
+  const byStrategy: Record<string, StrategyGroup> = {}
   for (const s of signals) {
     const key = s.strategy ?? 'unknown'
     if (!byStrategy[key]) byStrategy[key] = { total: 0, buyYes: 0, buyNo: 0, skip: 0, edges: [], usd: 0 }
-    const g = byStrategy[key]
+    const g = byStrategy[key]!
     g.total++
     if (s.action === 'BUY_YES') { g.buyYes++; g.edges.push(s.edge ?? 0); g.usd += s.size_usd ?? 0 }
     if (s.action === 'BUY_NO')  { g.buyNo++;  g.edges.push(s.edge ?? 0); g.usd += s.size_usd ?? 0 }
     if (s.action === 'SKIP')    { g.skip++ }
   }
 
-  // ── Top markets by edge ────────────────────────────────────────────
   const tradedSorted = [...traded]
     .filter(s => s.edge)
-    .sort((a, b) => b.edge - a.edge)
+    .sort((a, b) => (b.edge ?? 0) - (a.edge ?? 0))
     .slice(0, 10)
 
   return (
@@ -76,16 +99,15 @@ export default function StatsPanel() {
 
       {/* Overview cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-        <StatCard label="Total signals"  value={total} />
-        <StatCard label="BUY YES"        value={buyYes.length}  sub={pct(buyYes.length, total)}  accent="text-green-400" />
-        <StatCard label="BUY NO"         value={buyNo.length}   sub={pct(buyNo.length, total)}   accent="text-red-400" />
-        <StatCard label="Skipped"        value={skipped.length} sub={pct(skipped.length, total)} accent="text-gray-500" />
-        <StatCard
-          label="Avg edge (traded)"
-          value={avgEdge != null ? avgEdge.toFixed(4) : '—'}
-          accent="text-yellow-400"
-        />
+        <StatCard label="Total signals"      value={total} />
+        <StatCard label="BUY YES"            value={buyYes.length}  sub={pct(buyYes.length, total)}  accent="text-green-400" />
+        <StatCard label="BUY NO"             value={buyNo.length}   sub={pct(buyNo.length, total)}   accent="text-red-400" />
+        <StatCard label="Skipped"            value={skipped.length} sub={pct(skipped.length, total)} accent="text-gray-500" />
+        <StatCard label="Avg edge (traded)"  value={avgEdge != null ? avgEdge.toFixed(4) : '—'}      accent="text-yellow-400" />
       </div>
+
+      {/* Suppress unused variable warning — totalUsd is shown in future extensions */}
+      {totalUsd > 0 && null}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
@@ -113,7 +135,7 @@ export default function StatsPanel() {
                   <td className="py-2 text-right text-red-400">{g.buyNo}</td>
                   <td className="py-2 text-right text-gray-500">{pct(g.skip, g.total)}</td>
                   <td className="py-2 text-right text-yellow-400 font-mono text-xs">
-                    {avg(g.edges) != null ? avg(g.edges).toFixed(4) : '—'}
+                    {avg(g.edges) != null ? avg(g.edges)!.toFixed(4) : '—'}
                   </td>
                   <td className="py-2 text-right text-gray-300 font-mono text-xs">
                     ${g.usd.toFixed(2)}
@@ -151,7 +173,7 @@ export default function StatsPanel() {
                         }`}>{s.action}</span>
                       </td>
                       <td className="py-2 text-right font-mono text-xs text-yellow-400">
-                        {s.edge.toFixed(4)}
+                        {(s.edge ?? 0).toFixed(4)}
                       </td>
                       <td className="py-2 text-right font-mono text-xs text-gray-300">
                         ${(s.size_usd ?? 0).toFixed(2)}

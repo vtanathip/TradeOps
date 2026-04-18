@@ -1,363 +1,306 @@
-# PolymarketBot
+# Polymarket Bot
 
-A Python bot for evaluating and trading on [Polymarket](https://polymarket.com) prediction markets — with a React dashboard to configure runs, trigger the bot, and track results in real time via Firebase Firestore.
+A TypeScript trading bot for [Polymarket](https://polymarket.com) prediction markets with a real-time React dashboard, powered by Firebase Cloud Functions.
 
----
-
-## Quick Start
-
-### Python bot
-
-```bash
-uv sync                              # install dependencies (includes firebase-admin)
-cp .env.example .env                 # fill in FIREBASE_CREDENTIALS_PATH
-uv run polymarket-bot                # one-shot demo (no Firebase needed)
-uv run polymarket-runner             # polling runner — watches Firestore for run requests
-```
-
-### Web dashboard
-
-```bash
-cd webapp
-npm install
-cp .env.example .env.local           # fill in VITE_FIREBASE_* values
-npm run dev                          # http://localhost:5173
-```
-
-### Firebase setup (first time)
-
-1. Go to [Firebase Console](https://console.firebase.google.com) → Create project
-2. Enable **Firestore Database** (start in test mode)
-3. **Bot credentials**: Project Settings → Service Accounts → Generate new private key → save as `firebase-credentials.json`, set `FIREBASE_CREDENTIALS_PATH` in `.env`
-4. **Web app credentials**: Project Settings → General → Your apps → Add web app → copy config values into `webapp/.env.local`
-5. Deploy Firestore rules: `firebase deploy --only firestore:rules` (requires [Firebase CLI](https://firebase.google.com/docs/cli))
-
----
-
-## How It Works
+## Architecture
 
 ```text
-Web Dashboard (React+Vite)           Firestore                  Bot (Python)
-  TriggerPanel  ──write──▶  /run_requests  ◀──poll──  polymarket-runner
-  RunsTable     ◀─listen──  /signals       ──write──▶  firebase_writer.py
-  StatsPanel    ◀─listen──  /signals
+┌─────────────────────────────────────┐
+│  React Dashboard (webapp/)          │
+│  Configure & submit a run request   │
+└──────────────┬──────────────────────┘
+               │ writes /run_requests (status: pending)
+               ▼
+┌─────────────────────────────────────┐
+│  Firestore                          │
+│  /run_requests   /signals           │
+└──────────────┬──────────────────────┘
+               │ Firestore trigger fires automatically
+               ▼
+┌─────────────────────────────────────┐
+│  Firebase Cloud Function            │
+│  functions/src/index.ts             │
+│  ├─ Fetch active markets (Gamma API)│
+│  ├─ Build MarketSnapshot (CLOB API) │
+│  ├─ Evaluate strategy               │
+│  └─ Write TradeSignals → /signals   │
+└─────────────────────────────────────┘
 ```
 
-1. Configure a strategy run in the dashboard and click **Run Strategy**
-2. A document is written to `/run_requests` with status `pending`
-3. `polymarket-runner` polls every 5 seconds, picks it up, and sets status to `running`
-4. The bot fetches active markets, evaluates each with the configured strategy, and writes each `TradeSignal` to `/signals`
-5. The dashboard updates live — no page refresh needed
-
----
-
-## Firestore Collections
-
-| Collection | Written by | Read by | Purpose |
-| --- | --- | --- | --- |
-| `/run_requests` | Web app | Bot | Strategy run configuration + lifecycle status |
-| `/signals` | Bot | Web app | Individual `TradeSignal` records per market |
-
-**`/run_requests` document shape:**
-```json
-{
-  "status":     "pending | running | completed | failed",
-  "created_at": "<Timestamp>",
-  "config": {
-    "strategy":        "fair_value | market_making",
-    "market_limit":    10,
-    "fair_prob":       0.60,
-    "half_spread":     0.02,
-    "tail_cutoff":     0.05,
-    "resolution_days": 3,
-    "risk": {
-      "bankroll_usd": 1000, "max_position_usd": 100,
-      "min_edge": 0.04,     "kelly_fraction": 0.25,
-      "min_liquidity_usd": 500, "max_spread": 0.05
-    }
-  },
-  "signal_count": 12,
-  "started_at":   "<Timestamp>",
-  "completed_at": "<Timestamp>"
-}
-```
-
----
+No separate server required — the Cloud Function fires the instant a run request is created.
 
 ## Project Structure
 
 ```
 PolymarketBot/
-├── src/polymarket_bot/
-│   ├── client.py               # Polymarket CLOB API client wrapper
-│   ├── market_data.py          # Market data fetch functions (Gamma + CLOB APIs)
-│   ├── main.py                 # Demo runner — fetches markets, runs strategy eval
-│   └── strategies/
-│       ├── base.py             # Core types: MarketSnapshot, TradeSignal, RiskConfig, Strategy ABC
-│       ├── snapshot.py         # build_snapshot() — converts live API data → MarketSnapshot
-│       ├── fair_value.py       # FairValueStrategy — trade on probability edge
-│       └── market_making.py    # MarketMakingStrategy — quote both sides, earn spread
-├── .env.example
-└── pyproject.toml
+├── firebase.json                 # Firebase deploy config
+├── .firebaserc                   # Firebase project alias
+├── firestore.rules               # Firestore security rules
+│
+├── functions/                    # Cloud Functions (TypeScript bot)
+│   ├── package.json
+│   ├── tsconfig.json
+│   ├── .env.example
+│   └── src/
+│       ├── index.ts              # Cloud Function entry (Firestore trigger)
+│       ├── runner.ts             # Shared executeRun() + local polling runner
+│       ├── client.ts             # PolymarketClient wrapper
+│       ├── marketData.ts         # Gamma API + CLOB data helpers
+│       ├── firebaseWriter.ts     # Firestore read/write
+│       └── strategies/
+│           ├── types.ts          # Action, MarketSnapshot, TradeSignal, RiskConfig
+│           ├── kellySize.ts      # Kelly Criterion position sizing
+│           ├── strategy.ts       # Strategy abstract base class
+│           ├── snapshot.ts       # buildSnapshot() — assembles market data
+│           ├── fairValue.ts      # FairValueStrategy
+│           └── marketMaking.ts   # MarketMakingStrategy + MakerQuotes
+│
+└── webapp/                       # React dashboard (TypeScript)
+    ├── package.json
+    ├── tsconfig.json
+    ├── vite.config.ts
+    └── src/
+        ├── App.tsx
+        ├── firebase.ts
+        └── components/
+            ├── TriggerPanel.tsx  # Configure & submit runs
+            ├── RunsTable.tsx     # Live signals table
+            └── StatsPanel.tsx    # Analytics overview
 ```
 
----
+## Prerequisites
 
-## Architecture
+- **Node.js 20+**
+- **Firebase CLI**: `npm install -g firebase-tools`
+- **Firebase project** with Firestore enabled
+- Firebase login: `firebase login`
 
-The bot separates concerns into three layers:
+## Setup
 
-```
-┌─────────────────────────────────────────────┐
-│                  Runner / main.py            │  orchestrates the loop
-└────────────────────┬────────────────────────┘
-                     │
-         ┌───────────▼───────────┐
-         │   Strategy Layer       │  evaluate(snapshot) → TradeSignal
-         │  fair_value.py         │
-         │  market_making.py      │
-         └───────────┬───────────┘
-                     │
-         ┌───────────▼───────────┐
-         │   Data Layer           │  live market state → typed snapshot
-         │  snapshot.py           │
-         │  market_data.py        │
-         └───────────┬───────────┘
-                     │
-         ┌───────────▼───────────┐
-         │   API Layer            │  HTTP calls to Polymarket
-         │  client.py             │  CLOB API + Gamma REST API
-         └───────────────────────┘
+### 1. Install dependencies
+
+```bash
+cd functions && npm install
+cd ../webapp && npm install
 ```
 
-### API Layer — `client.py`
+### 2. Configure Firebase project
 
-`PolymarketClient` wraps `py-clob-client`. Pass a private key for authenticated trading; omit it for read-only market data.
+Edit [.firebaserc](.firebaserc) and replace `YOUR_FIREBASE_PROJECT_ID` with your actual project ID:
 
-```python
-client = PolymarketClient(private_key=os.getenv("POLYMARKET_PRIVATE_KEY"))
-clob   = client.clob   # py_clob_client.ClobClient
+```json
+{ "projects": { "default": "your-project-id" } }
 ```
 
-Two APIs are used:
+### 3. Configure the webapp
 
-| API | URL | Auth | Used for |
-|-----|-----|------|----------|
-| Gamma REST | `gamma-api.polymarket.com` | None | Discover active markets |
-| CLOB | `clob.polymarket.com` | Optional | Order books, pricing, order placement |
-
-### Data Layer — `market_data.py` + `snapshot.py`
-
-`market_data.py` exposes thin wrappers around CLOB and Gamma endpoints:
-`get_active_markets`, `get_order_book`, `get_midpoint`, `get_spread`, `get_last_trade_price`.
-
-`snapshot.py` assembles those calls into a single typed `MarketSnapshot` that strategies consume:
-
-```python
-snapshot = build_snapshot(market_dict, clob)
+```bash
+cp webapp/.env.example webapp/.env.local
+# Fill in your Firebase web app credentials from:
+# Firebase Console → Project Settings → Your apps → Web app → SDK config
 ```
 
-### Strategy Layer — `strategies/`
+## Local Development
 
-Strategies are stateless evaluators. Each receives a `MarketSnapshot` and returns a `TradeSignal`. They do not place orders themselves — execution is the runner's responsibility.
+Run the bot locally against your real Firestore project (no Cloud Functions deployment needed):
 
-```
-MarketSnapshot  →  Strategy.evaluate()  →  TradeSignal
-```
+```bash
+cd functions
+cp .env.example .env
+# Fill in FIREBASE_CREDENTIALS_PATH (path to service account JSON)
 
----
-
-## Polymarket vs. General Trading
-
-Polymarket prediction markets differ from traditional assets in three ways that shape every design decision:
-
-| Concept | Traditional trading | Polymarket |
-|---------|---------------------|------------|
-| Price meaning | Arbitrary asset value | A probability (0.01 – 0.99) |
-| Outcome | Continuous, open-ended | Binary — resolves to 0.00 or 1.00 |
-| "Short selling" | Sell the asset | Buy the NO token instead |
-| Stop loss | Exit at price target | Sell token back to book, or hold to resolution |
-| Position sizing | % risk / ATR | Kelly Criterion on probability edge |
-
-Because prices are probabilities, **edge** is simply `your_estimate − market_price`. The Kelly Criterion then converts that edge into a dollar size.
-
----
-
-## Strategy Reference
-
-### Core Types (`strategies/base.py`)
-
-#### `MarketSnapshot`
-
-Immutable snapshot of one market at a point in time. Built by `build_snapshot()`.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `condition_id` | `str` | Unique market identifier |
-| `question` | `str` | Human-readable market question |
-| `yes_token_id` | `str` | Outcome token ID for YES |
-| `no_token_id` | `str` | Outcome token ID for NO |
-| `yes_price` | `float` | Mid-market price of YES (= implied probability) |
-| `no_price` | `float` | Mid-market price of NO |
-| `yes_bid/ask` | `float\|None` | Top-of-book for YES |
-| `no_bid/ask` | `float\|None` | Top-of-book for NO |
-| `spread` | `float` | Bid-ask spread of YES token |
-| `liquidity` | `float\|None` | Total USDC in the order book |
-| `closes_at` | `datetime\|None` | Resolution deadline |
-
-#### `TradeSignal`
-
-What a strategy decided to do.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `action` | `Action` | `BUY_YES`, `BUY_NO`, `HOLD`, or `SKIP` |
-| `token_id` | `str` | Token to buy (empty for HOLD/SKIP) |
-| `price` | `float` | Limit price to submit |
-| `size_usd` | `float` | Dollar notional after Kelly sizing |
-| `edge` | `float` | Raw probability edge |
-| `reason` | `str` | Human-readable rationale |
-
-#### `RiskConfig`
-
-Portfolio-level guardrails shared by all strategies.
-
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `bankroll_usd` | 1000.0 | Total capital |
-| `max_position_usd` | 100.0 | Hard cap per market |
-| `min_edge` | 0.04 | Minimum edge to trade (4 pp) |
-| `kelly_fraction` | 0.25 | Fraction of full Kelly (quarter-Kelly is conservative) |
-| `min_liquidity_usd` | 500.0 | Skip markets below this USDC depth |
-| `max_spread` | 0.05 | Skip markets with spread above this |
-
-#### Kelly Criterion for Binary Markets
-
-Full Kelly fraction for each side:
-
-```
-Buy YES:  f* = (p - price) / (1 - price)
-Buy NO:   f* = ((1-p) - (1-price)) / price   =   (price - p) / price
+npm run runner
+# Polls Firestore every 5s for pending run_requests
 ```
 
-Where `p` is your probability estimate and `price` is the current market mid. Dollar size = `bankroll × kelly_fraction × f*`, capped at `max_position_usd`.
+Run the dashboard locally:
 
----
+```bash
+cd webapp
+npm run dev
+# Opens at http://localhost:5173
+```
 
-### Built-in Strategies
+## Deploy to Firebase
 
-#### `FairValueStrategy`
+### Deploy Cloud Functions
 
-Trade when the market price diverges from your probability estimate by at least `min_edge`.
+```bash
+cd functions
+npm run build          # compile TypeScript → lib/
+npm run deploy         # firebase deploy --only functions
+```
 
-```python
-from polymarket_bot.strategies import FairValueStrategy, RiskConfig
+For the private key in production, use Firebase Secret Manager instead of `.env`:
 
-strategy = FairValueStrategy(
-    fair_prob=0.65,          # your estimated probability of YES
-    config=RiskConfig(
-        bankroll_usd=1_000,
-        min_edge=0.04,
-        kelly_fraction=0.25,
-    )
-)
+```bash
+firebase functions:secrets:set POLYMARKET_PRIVATE_KEY
+```
 
-signal = strategy.evaluate(snapshot)
-# signal.action → BUY_YES / BUY_NO / SKIP
-# signal.size_usd → Kelly-sized dollar amount
+The Cloud Function runtime provides Firebase credentials automatically — no `FIREBASE_CREDENTIALS_PATH` needed in production.
+
+### Deploy webapp (optional)
+
+```bash
+cd webapp
+npm run build          # outputs to webapp/dist/
+firebase deploy --only hosting
+```
+
+## Strategies
+
+### Fair Value Strategy
+
+Trade when the market price diverges from your probability estimate.
+
+```typescript
+import { FairValueStrategy, RiskConfig } from "./strategies";
+
+const strategy = new FairValueStrategy(0.65, {
+  bankrollUsd: 1000,
+  maxPositionUsd: 100,
+  minEdge: 0.04,
+});
+const signal = strategy.evaluate(snapshot);
+// signal.action: BUY_YES | BUY_NO | SKIP
 ```
 
 **Logic:**
-1. Run quality checks (liquidity, spread, not expired)
-2. Compute `edge_yes = fair_prob − yes_price`
-3. If `edge_yes ≥ min_edge` → `BUY_YES` with Kelly size
-4. Else if `−edge_yes ≥ min_edge` → `BUY_NO` with Kelly size
-5. Otherwise → `SKIP`
 
----
+- `edge_yes = fairProb - marketPrice` — if ≥ `minEdge`, buy YES
+- `edge_no  = marketPrice - fairProb` — if ≥ `minEdge`, buy NO
+- Position sized by Kelly Criterion: `f* = (p - price) / (1 - price)`
 
-#### `MarketMakingStrategy`
+### Market Making Strategy
 
-Provide liquidity on both sides of the YES token, earning the spread. Returns two signals (bid + ask) via `evaluate_both()`.
+Provide liquidity by quoting both sides of the book.
 
-```python
-from polymarket_bot.strategies import MarketMakingStrategy, RiskConfig
+```typescript
+import { MarketMakingStrategy } from "./strategies";
 
-strategy = MarketMakingStrategy(
-    half_spread=0.02,        # quote 2 cents each side of mid
-    tail_cutoff=0.05,        # skip markets below 5% or above 95%
-    resolution_days=3,       # widen spread within 3 days of resolution
-    config=RiskConfig(bankroll_usd=2_000, max_position_usd=100),
-)
-
-quotes = strategy.evaluate_both(snapshot)
-# quotes.bid  → TradeSignal(BUY_YES, price=mid-half_spread, ...)
-# quotes.ask  → TradeSignal(BUY_NO,  price=1-(mid+half_spread), ...)
+const strategy = new MarketMakingStrategy(
+  0.02,  // halfSpread (2 cents)
+  0.05,  // tailCutoff (skip price < 5% or > 95%)
+  3,     // resolutionDays (widen spread within 3 days of resolution)
+);
+const { bid, ask, skipped } = strategy.evaluateBoth(snapshot);
 ```
 
 **Logic:**
-1. Skip tail prices (`price < tail_cutoff` or `price > 1 − tail_cutoff`) — asymmetric resolution risk
-2. Adjust `half_spread` upward linearly as resolution approaches
-3. Place limit bid at `mid − half_spread` (BUY_YES)
-4. Place limit ask at `mid + half_spread` expressed as a BUY_NO price
 
----
+- Quotes at `mid ± halfSpread`
+- Skips tail prices (`< tailCutoff` or `> 1 - tailCutoff`) — asymmetric risk
+- Widens spread linearly as resolution approaches (gamma risk)
 
-### Writing a Custom Strategy
+### Adding a Custom Strategy
 
-Subclass `Strategy` and implement `evaluate()`. Always return a `TradeSignal` — use `self._skip(reason)` instead of raising.
+```typescript
+import { Strategy, MarketSnapshot, TradeSignal } from "./strategies/types";
 
-```python
-from polymarket_bot.strategies import (
-    Action, MarketSnapshot, RiskConfig,
-    Strategy, TradeSignal, kelly_size,
-)
+export class MyStrategy extends Strategy {
+  evaluate(snapshot: MarketSnapshot): TradeSignal {
+    const [ok, reason] = this.passesQualityChecks(snapshot);
+    if (!ok) return this.skip(reason);
 
-class MyStrategy(Strategy):
-    def evaluate(self, snapshot: MarketSnapshot) -> TradeSignal:
-        ok, reason = self._passes_quality_checks(snapshot)
-        if not ok:
-            return self._skip(reason)
-
-        my_prob = self._estimate_probability(snapshot)   # your model here
-        edge    = my_prob - snapshot.yes_price
-
-        if edge >= self.config.min_edge:
-            size = kelly_size(my_prob, snapshot.yes_price, Action.BUY_YES, self.config)
-            return TradeSignal(
-                action=Action.BUY_YES,
-                token_id=snapshot.yes_token_id,
-                price=snapshot.yes_ask or snapshot.yes_price,
-                size_usd=size,
-                edge=edge,
-                reason=f"my_model={my_prob:.2f} market={snapshot.yes_price:.2f}",
-            )
-
-        if -edge >= self.config.min_edge:
-            size = kelly_size(my_prob, snapshot.yes_price, Action.BUY_NO, self.config)
-            return TradeSignal(
-                action=Action.BUY_NO,
-                token_id=snapshot.no_token_id,
-                price=snapshot.no_ask or snapshot.no_price,
-                size_usd=size,
-                edge=-edge,
-                reason=f"my_model={my_prob:.2f} market={snapshot.yes_price:.2f}",
-            )
-
-        return self._skip(f"edge={edge:.3f} below min={self.config.min_edge}")
-
-    def _estimate_probability(self, snapshot: MarketSnapshot) -> float:
-        # Replace with your model: news sentiment, base rates, external data, etc.
-        return 0.5
+    // Your logic here...
+    return this.skip("not implemented");
+  }
+}
 ```
 
----
+Register it in [functions/src/runner.ts](functions/src/runner.ts) in `buildStrategy()`.
+
+## Core Types
+
+```typescript
+interface MarketSnapshot {
+  conditionId: string;
+  question:    string;
+  yesTokenId:  string;
+  noTokenId:   string;
+  yesPrice:    number;       // mid-market probability (0.01–0.99)
+  noPrice:     number;
+  spread:      number;
+  liquidity:   number | null;
+  closesAt:    Date   | null;
+  // top-of-book (optional)
+  yesBid: number | null; yesAsk: number | null;
+  noBid:  number | null; noAsk:  number | null;
+}
+
+interface TradeSignal {
+  action:  Action;   // BUY_YES | BUY_NO | HOLD | SKIP
+  tokenId: string;
+  price:   number;   // limit price
+  sizeUsd: number;   // dollar notional (Kelly-sized)
+  edge:    number;   // |ourProb - marketPrice|
+  reason:  string;
+}
+
+interface RiskConfig {
+  bankrollUsd:     number;  // default 1000
+  maxPositionUsd:  number;  // default 100
+  minEdge:         number;  // default 0.04
+  kellyFraction:   number;  // default 0.25 (quarter-Kelly)
+  minLiquidityUsd: number;  // default 500
+  maxSpread:       number;  // default 0.05
+}
+```
+
+## Firestore Schema
+
+```
+/run_requests/{id}
+  status:       "pending" | "running" | "completed" | "failed"
+  created_at:   Timestamp
+  config:       { strategy, market_limit, fair_prob?, half_spread?, ..., risk: {...} }
+  signal_count: number  (on completion)
+  error:        string  (on failure)
+
+/signals/{id}
+  request_id:    string
+  run_timestamp: Timestamp
+  strategy:      string
+  condition_id:  string
+  question:      string
+  action:        "BUY_YES" | "BUY_NO" | "HOLD" | "SKIP"
+  token_id:      string
+  price:         number
+  size_usd:      number
+  edge:          number
+  reason:        string
+  yes_price:     number
+  no_price:      number
+  spread:        number
+  liquidity:     number | null
+```
 
 ## Environment Variables
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `POLYMARKET_PRIVATE_KEY` | No | Ethereum/Polygon private key — only needed for order placement |
-| `POLYMARKET_FUNDER` | No | Wallet address used when submitting orders |
+### `functions/.env` (local dev only)
 
-Read-only market data (order books, prices, active markets) works without any credentials.
+```bash
+# Service account JSON (from Firebase Console → Project Settings → Service Accounts)
+FIREBASE_CREDENTIALS_PATH=../firebase-credentials.json
+
+# Polymarket keys (reserved for future order execution)
+POLYMARKET_PRIVATE_KEY=
+POLYMARKET_FUNDER=
+```
+
+### `webapp/.env.local`
+
+```bash
+VITE_FIREBASE_API_KEY=
+VITE_FIREBASE_AUTH_DOMAIN=
+VITE_FIREBASE_PROJECT_ID=
+VITE_FIREBASE_STORAGE_BUCKET=
+VITE_FIREBASE_MESSAGING_SENDER_ID=
+VITE_FIREBASE_APP_ID=
+```
+
+## Notes
+
+- The bot currently runs in **read-only mode** (market scanning only, no order placement). Placing orders requires constructing a `viem` `WalletClient` from `POLYMARKET_PRIVATE_KEY` and passing it as `signer` to `ClobClient`.
+- Firestore security rules in [firestore.rules](firestore.rules) are in test mode (open read/write). Lock down with Firebase Auth before going to production.
+- Cloud Functions use the Firebase free Spark plan up to ~125K invocations/month. For heavier usage, upgrade to the Blaze plan.
