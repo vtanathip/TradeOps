@@ -1,0 +1,10 @@
+{
+    "mcpServers": {
+        "tradingview": {
+            "command": "node",
+            "args": [
+                "${TRADINGVIEW_MCP_PATH}"
+            ]
+        }
+    }
+}
