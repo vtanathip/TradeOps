@@ -35,6 +35,23 @@ Copy `.env.example` to `.env` and fill in your values:
 cp .env.example .env
 ```
 
+### Sandbox (UAT) — recommended for testing
+
+On the Settrade developer portal, each application has a **Sandbox** tab that provides a separate `Application ID` and `Secret` for the UAT environment. Use those values and set both `APP_CODE` and `BROKER_ID` to `SANDBOX`:
+
+```env
+SETTRADE_APP_ID=your_sandbox_application_id
+SETTRADE_APP_SECRET=your_sandbox_secret
+SETTRADE_APP_CODE=SANDBOX
+SETTRADE_BROKER_ID=SANDBOX
+```
+
+`SETTRADE_APP_CODE` and `SETTRADE_BROKER_ID` both default to `SANDBOX` in [config.py](config.py), so you can also omit those two lines entirely.
+
+### Production
+
+Use the credentials from the **Production** tab and set your real broker ID:
+
 ```env
 SETTRADE_APP_ID=your_application_id
 SETTRADE_APP_SECRET=your_secret
@@ -88,4 +105,4 @@ The `Investor` object requires four values:
 | `app_code` | The name you gave your app when registering |
 | `broker_id` | Your broker's numeric ID (e.g. `003` for Pi Securities) |
 
-Using `broker_id="SANDBOX"` switches the SDK to the UAT test environment automatically (broker `098`).
+Setting `broker_id="SANDBOX"` (and `app_code="SANDBOX"`) switches the SDK to the UAT test environment. Use the **Sandbox** credentials shown on your app's Sandbox tab at [developer.settrade.com](https://developer.settrade.com/open-api/) — they are different from your production credentials.
