@@ -78,10 +78,21 @@ Fetches live quotes for PTT, AOT, and CPALL and prints them to stdout.
 ## 6. Run integration tests
 
 ```sh
-uv run pytest test_integration.py -v -s
+uv run pytest tests/ -v -s
 ```
 
 The tests hit the real Settrade API using credentials from `.env`.
+
+> **Note — broker permission scope matters.**  
+> Each broker supports a different subset of the API. Pi Securities (003) supports **Derivatives Market Data** only — equity quotes return a `GWD-07` permission error. The integration tests cover both cases: derivatives quotes (positive) and equity access denial (negative).
+>
+> | Broker | Equity Market Data | Derivatives Market Data |
+> | --- | --- | --- |
+> | Pi Securities (003) | ✗ | ✓ |
+> | BYD (038) | ✓ | ✓ |
+> | Globlex (025) | ✓ | ✓ |
+>
+> See the full list at [developer.settrade.com/open-api/document/broker-list](https://developer.settrade.com/open-api/document/broker-list).
 
 ## Project structure
 

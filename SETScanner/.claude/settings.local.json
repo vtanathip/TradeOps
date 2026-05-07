@@ -8,7 +8,12 @@
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
       "Bash(git push *)",
-      "Bash(python -m pytest test_integration.py -v)"
+      "Bash(python -m pytest test_integration.py -v)",
+      "WebFetch(domain:developer.settrade.com)",
+      "Bash(python -c \"from settrade_v2 import Investor; import inspect; print\\([m for m in dir\\(Investor\\) if not m.startswith\\('_'\\)]\\)\")",
+      "Bash(python -c ' *)",
+      "Bash(python -m pytest test_integration.py -v -s)",
+      "Bash(python -m pytest tests/ -v -s)"
     ]
   }
 }

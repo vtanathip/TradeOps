@@ -1,3 +1,4 @@
+.env.sandbox
 .env
 __pycache__/
 *.pyc
