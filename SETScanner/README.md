@@ -84,13 +84,17 @@ uv run pytest tests/ -v -s
 The tests hit the real Settrade API using credentials from `.env`.
 
 > **Note — broker permission scope matters.**  
-> Each broker supports a different subset of the API. Pi Securities (003) supports **Derivatives Market Data** only — equity quotes return a `GWD-07` permission error. The integration tests cover both cases: derivatives quotes (positive) and equity access denial (negative).
+> Each broker supports a different subset of the API. Equity quotes return a `GWD-07` error if the broker does not have Equity Market Data permission.
 >
-> | Broker | Equity Market Data | Derivatives Market Data |
-> | --- | --- | --- |
-> | Pi Securities (003) | ✗ | ✓ |
-> | BYD (038) | ✓ | ✓ |
-> | Globlex (025) | ✓ | ✓ |
+> | Broker | Equity Order API | Equity Market Data | Derivatives Order API | Derivatives Market Data |
+> | --- | --- | --- | --- | --- |
+> | Pi Securities (003) | ✗ | ✗ | ✓ | ✓ |
+> | INVX (023) | ✓ | ✓ | ✓ | ✓ |
+> | BYD (038) | ✓ | ✓ | ✓ | ✓ |
+> | Globlex (025) | ✓ | ✓ | ✓ | ✓ |
+>
+> **Pi Securities** — current production credentials in `.env`. Derivatives market data only; equity quotes are tested as expected-denial (GWD-07).  
+> **INVX (023)** — next target broker. Supports full equity + derivatives access; swap `SETTRADE_BROKER_ID=023` and use INVX app credentials to unlock equity quotes (PTT, AOT, CPALL).
 >
 > See the full list at [developer.settrade.com/open-api/document/broker-list](https://developer.settrade.com/open-api/document/broker-list).
 
@@ -98,11 +102,12 @@ The tests hit the real Settrade API using credentials from `.env`.
 
 ```
 .
-├── main.py              # Entry point — login and fetch quotes
-├── config.py            # Loads credentials from .env
-├── test_integration.py  # Integration tests against live API
-├── .env                 # Your credentials (git-ignored)
-└── .env.example         # Credential template
+├── main.py                          # Entry point — login and fetch quotes
+├── config.py                        # Loads credentials from .env
+├── tests/
+│   └── test_pi_integration.py       # Integration tests for Pi Securities (003)
+├── .env                             # Your credentials (git-ignored)
+└── .env.example                     # Credential template
 ```
 
 ## How the SDK credentials work
@@ -114,6 +119,6 @@ The `Investor` object requires four values:
 | `app_id` | Application ID from the developer portal |
 | `app_secret` | Secret from the developer portal |
 | `app_code` | The name you gave your app when registering |
-| `broker_id` | Your broker's numeric ID (e.g. `003` for Pi Securities) |
+| `broker_id` | Your broker's numeric ID (`003` = Pi Securities, `023` = INVX) |
 
 Setting `broker_id="SANDBOX"` (and `app_code="SANDBOX"`) switches the SDK to the UAT test environment. Use the **Sandbox** credentials shown on your app's Sandbox tab at [developer.settrade.com](https://developer.settrade.com/open-api/) — they are different from your production credentials.
