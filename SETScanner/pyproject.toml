@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "SET market data scanner using Settrade Open API"
 requires-python = ">=3.12"
 dependencies = [
+    "pytest>=9.0.3",
     "python-dotenv>=1.2.2",
     "settrade-v2>=2.2.1",
 ]
