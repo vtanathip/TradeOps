@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:docs.polymarket.com)",
+      "WebSearch",
+      "Skill(update-config)",
+      "Skill(update-config:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:agentbets.ai)",
+      "Bash(npm install *)",
+      "Bash(npm show *)",
+      "Bash(node -e \"const m = require\\('./node_modules/@polymarket/clob-client/dist/index.js'\\); console.log\\(Object.keys\\(m\\).filter\\(k => !k.startsWith\\('_'\\)\\).join\\('\\\\n'\\)\\)\")",
+      "Bash(node -e ' *)",
+      "Bash(npm run *)",
+      "Bash(node --input-type=module)",
+      "Bash(npx tsx --eval ' *)",
+      "Bash(npx tsx *)",
+      "Bash(node -e \"fetch\\('https://clob.polymarket.com/ok'\\).then\\(r=>r.json\\(\\)\\).then\\(console.log\\)\")"
+    ]
+  }
+}

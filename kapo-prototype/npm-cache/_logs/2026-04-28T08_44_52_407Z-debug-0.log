@@ -1,0 +1,19 @@
+0 verbose cli C:\Program Files\nodejs\node.exe C:\Program Files\nodejs\node_modules\npm\bin\npm-cli.js
+1 info using npm@11.12.1
+2 info using node@v24.15.0
+3 silly config load:file:C:\ProgramData\nvm\v24.15.0\node_modules\npm\npmrc
+4 silly config load:file:E:\Development\repository\TradeOps\kapo-prototype\.npmrc
+5 silly config load:file:C:\Users\mart_\.npmrc
+6 silly config load:file:C:\Program Files\nodejs\etc\npmrc
+7 verbose title npm show @polymarket/clob-client dist-tags
+8 verbose argv "show" "@polymarket/clob-client" "dist-tags"
+9 verbose logfile logs-max:10 dir:E:\Development\repository\TradeOps\kapo-prototype\npm-cache\_logs\2026-04-28T08_44_52_407Z-
+10 verbose logfile E:\Development\repository\TradeOps\kapo-prototype\npm-cache\_logs\2026-04-28T08_44_52_407Z-debug-0.log
+11 silly logfile done cleaning log files
+12 http fetch GET 200 https://registry.npmjs.org/@polymarket%2fclob-client 130ms (cache revalidated)
+13 verbose cwd E:\Development\repository\TradeOps\kapo-prototype
+14 verbose os Windows_NT 10.0.26200
+15 verbose node v24.15.0
+16 verbose npm  v11.12.1
+17 verbose exit 0
+18 info ok

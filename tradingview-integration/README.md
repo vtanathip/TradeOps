@@ -1,4 +1,4 @@
-# data-analytic-TV
+# tradingview-integration
 
 TradingView data integration layer for TradeOps. Connects to a locally running TradingView Desktop instance via [tradingview-mcp](https://github.com/tradesdontlie/tradingview-mcp) and exposes chart data to Claude Code and custom programs.
 
