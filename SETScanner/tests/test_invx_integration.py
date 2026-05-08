@@ -45,11 +45,14 @@ def investor_algo():
 @pytest.fixture(scope="module")
 def investor_algo_eq():
     """ALGO_EQ credentials — Equity access."""
-    return _make_investor(
-        app_id=os.environ["INVX_ALGO_EQ_APP_ID"],
-        app_secret=os.environ["INVX_ALGO_EQ_APP_SECRET"],
-        app_code="ALGO_EQ",
-    )
+    try:
+        return _make_investor(
+            app_id=os.environ["INVX_ALGO_EQ_APP_ID"],
+            app_secret=os.environ["INVX_ALGO_EQ_APP_SECRET"],
+            app_code="ALGO_EQ",
+        )
+    except Exception as e:
+        pytest.skip(f"INVX ALGO_EQ credentials not configured or invalid: {e}")
 
 
 # ---------------------------------------------------------------------------

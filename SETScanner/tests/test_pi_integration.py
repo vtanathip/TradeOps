@@ -14,7 +14,10 @@ from main import get_investor, get_quote
 
 @pytest.fixture(scope="module")
 def investor():
-    return get_investor()
+    try:
+        return get_investor()
+    except Exception as e:
+        pytest.skip(f"Pi Securities credentials not configured or invalid: {e}")
 
 
 # ---------------------------------------------------------------------------
