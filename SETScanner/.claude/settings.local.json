@@ -13,7 +13,23 @@
       "Bash(python -c \"from settrade_v2 import Investor; import inspect; print\\([m for m in dir\\(Investor\\) if not m.startswith\\('_'\\)]\\)\")",
       "Bash(python -c ' *)",
       "Bash(python -m pytest test_integration.py -v -s)",
-      "Bash(python -m pytest tests/ -v -s)"
+      "Bash(python -m pytest tests/ -v -s)",
+      "Bash(gh api *)",
+      "Bash(python -c \"import sys, base64; print\\(base64.b64decode\\(sys.stdin.read\\(\\)\\).decode\\(\\)\\)\")",
+      "Bash(uvx --version)",
+      "mcp__set_mcp__get_financial_statement",
+      "Bash(Get-ChildItem -Recurse -Exclude \".venv\",\"*.pyc\",\"__pycache__\" -File)",
+      "Bash(uv add *)",
+      "Bash(git -C /e/Development/repository/TradeOps/SETScanner status)",
+      "Bash(git -C /e/Development/repository/TradeOps/SETScanner log --oneline -3)",
+      "Bash(git -C /e/Development/repository/TradeOps/SETScanner add README.md pyproject.toml uv.lock .mcp.json docs/ tests/test_set_mcp_integration.py)",
+      "Bash(git -C /e/Development/repository/TradeOps/SETScanner commit -m ' *)",
+      "Bash(git -C /e/Development/repository/TradeOps/SETScanner push origin main)",
+      "Bash(git -C \"e:\\\\Development\\\\repository\\\\TradeOps\\\\SETScanner\" status)",
+      "Bash(git -C \"e:\\\\Development\\\\repository\\\\TradeOps\\\\SETScanner\" diff tests/test_set_mcp_integration.py)",
+      "Bash(git -C \"e:\\\\Development\\\\repository\\\\TradeOps\\\\SETScanner\" diff .claude/settings.local.json)",
+      "Bash(git -C \"e:\\\\Development\\\\repository\\\\TradeOps\\\\SETScanner\" add .gitignore .claude/settings.local.json tests/test_set_mcp_integration.py)",
+      "Bash(git -C 'e:\\\\Development\\\\repository\\\\TradeOps\\\\SETScanner' commit -m ' *)"
     ]
   }
 }

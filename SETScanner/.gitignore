@@ -8,3 +8,5 @@ venv/
 *.egg-info/
 dist/
 build/
+npm-cache/
+.claude/settings.json

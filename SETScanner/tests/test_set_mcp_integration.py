@@ -10,17 +10,44 @@ This complements the real-time Settrade Open API quotes in main.py:
 All tests hit the live settrade.com website.
 """
 import asyncio
+import sys
 import pytest
 from set_mcp.settrade_scraper import FinancialStatement, get_financial_statement_from_year
+
+
+def _puts(text: str) -> None:
+    """Print UTF-8 text safely on Windows terminals (avoids cp1252 crash)."""
+    sys.stdout.buffer.write((text + "\n").encode("utf-8"))
+    sys.stdout.buffer.flush()
 
 
 # ---------------------------------------------------------------------------
 # Shared fixture — fetch PTT 2023–2024 once for the whole module
 # ---------------------------------------------------------------------------
 
+def _print_statements(symbol: str, result: FinancialStatement) -> None:
+    _puts(f"\n{'='*60}")
+    _puts(f"  {symbol} — Business Type")
+    _puts(f"{'='*60}")
+    _puts(result["business_type"] or "(none)")
+
+    for label, key in [
+        ("Income Statement", "income_statement"),
+        ("Balance Sheet", "balance_sheet"),
+        ("Cash Flow Statement", "cash_flow_statement"),
+    ]:
+        lines = result[key].splitlines()
+        _puts(f"\n--- {label} ({len(lines)-1} rows) ---")
+        _puts(lines[0])           # header
+        for line in lines[1:]:    # data rows
+            _puts(line)
+
+
 @pytest.fixture(scope="module")
 def ptt_financials() -> FinancialStatement:
-    return asyncio.run(get_financial_statement_from_year("PTT", 2023, 2024))
+    result = asyncio.run(get_financial_statement_from_year("PTT", 2023, 2024))
+    _print_statements("PTT 2023–2024", result)
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -100,6 +127,7 @@ def test_business_type_is_populated(ptt_financials):
 
 def test_single_year_returns_one_amount_column():
     result = asyncio.run(get_financial_statement_from_year("SCB", 2024, 2024))
+    _print_statements("SCB 2024", result)
     header = result["income_statement"].splitlines()[0]
     assert "2024" in header
     assert "2023" not in header
@@ -112,6 +140,7 @@ def test_single_year_returns_one_amount_column():
 @pytest.mark.parametrize("symbol", ["AOT", "CPALL", "KBANK"])
 def test_major_set_stocks_return_all_statements(symbol):
     result = asyncio.run(get_financial_statement_from_year(symbol, 2024, 2024))
+    _print_statements(f"{symbol} 2024", result)
     assert result["income_statement"], f"{symbol}: income statement is empty"
     assert result["balance_sheet"], f"{symbol}: balance sheet is empty"
     assert result["cash_flow_statement"], f"{symbol}: cash flow is empty"
