@@ -105,10 +105,23 @@ The tests hit the real Settrade API using credentials from `.env`.
 ├── main.py                          # Entry point — login and fetch quotes
 ├── config.py                        # Loads credentials from .env
 ├── tests/
-│   └── test_pi_integration.py       # Integration tests for Pi Securities (003)
+│   ├── test_pi_integration.py       # Integration tests for Pi Securities (003)
+│   └── test_set_mcp_integration.py  # Financial statement tests via set-mcp
+├── docs/
+│   └── set-mcp-integration.md       # set-mcp setup and usage guide
+├── .mcp.json                        # MCP server config for Claude Code
 ├── .env                             # Your credentials (git-ignored)
 └── .env.example                     # Credential template
 ```
+
+## Financial statements (set-mcp)
+
+Annual income statements, balance sheets, and cash flow for any SET stock are available via [set-mcp](https://github.com/batprem/set-mcp) — no credentials required.
+
+- **In Claude Code:** ask Claude directly, e.g. *"Get PTT financials 2022–2024"*
+- **In Python:** `from set_mcp.settrade_scraper import get_financial_statement_from_year`
+
+See [docs/set-mcp-integration.md](docs/set-mcp-integration.md) for full setup and usage.
 
 ## How the SDK credentials work
 
