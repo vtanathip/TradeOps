@@ -31,5 +31,9 @@
       "Bash(git -C \"e:\\\\Development\\\\repository\\\\TradeOps\\\\SETScanner\" add .gitignore .claude/settings.local.json tests/test_set_mcp_integration.py)",
       "Bash(git -C 'e:\\\\Development\\\\repository\\\\TradeOps\\\\SETScanner' commit -m ' *)"
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "set_mcp"
+  ],
+  "enableAllProjectMcpServers": true
 }

@@ -1,7 +1,7 @@
 {
   "mcpServers": {
     "set_mcp": {
-      "command": "C:\\Users\\mart_\\.local\\bin\\uvx.exe",
+      "command": "uvx",
       "args": [
         "set-mcp"
       ]
