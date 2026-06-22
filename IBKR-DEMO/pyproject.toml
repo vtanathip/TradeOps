@@ -1,0 +1,9 @@
+[project]
+name = "ibkr-demo"
+version = "0.1.0"
+description = "Minimal IBKR paper-account verification (connect + buy/sell + cancel)"
+requires-python = ">=3.12"
+dependencies = [
+    "ib_async>=1.0.0",
+    "python-dotenv>=1.0.0",
+]
