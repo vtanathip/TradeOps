@@ -1,0 +1,13 @@
+# env / editor
+.venv/
+.vscode/
+
+# downloaded data + caches (re-create with download_dukascopy.sh)
+download/
+data/
+*.dukascopy-cache/
+.dukascopy-cache/
+*.csv
+
+# logs
+*.log
