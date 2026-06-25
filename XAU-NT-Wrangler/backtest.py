@@ -59,6 +59,17 @@ bid = bid_raw.reindex(idx).ffill()
 ask = ask_raw.reindex(idx).ffill()
 ok = bid["close"].notna() & ask["close"].notna()
 bid, ask = bid[ok], ask[ok]
+
+# ffill pairs a FRESH quote on one side with a STALE one on the other, which makes ask < bid
+# on ~42% of minutes -> a crossed book that can't exist live (buys would fill BELOW the bid =
+# fictional free money, the entire fake return). Drop any minute whose ask candle dips below the
+# bid candle; we don't have a trustworthy two-sided quote there.
+# ponytail: drop > clamp — a clamped 0-spread is still fiction, just less profitable fiction.
+ohlc = ["open", "high", "low", "close"]
+sane = (ask[ohlc].values >= bid[ohlc].values).all(axis=1)
+dropped = (~sane).sum()
+bid, ask = bid[sane], ask[sane]
+print(f"Dropped {dropped:,} crossed-book minutes ({dropped / len(sane):.1%}) — stale-quote ffill artifacts")
 if START != "all":
     m = bid.index >= pd.Timestamp(START, tz="UTC")
     bid, ask = bid[m], ask[m]
