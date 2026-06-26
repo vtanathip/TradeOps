@@ -82,11 +82,14 @@ engine.add_venue(
     base_currency=USD,
     starting_balances=[Money(START_BAL, USD)],
     default_leverage=Decimal(1),  # leverage comes from the 3% futures margin, not account leverage
-    # 100ms order latency so market orders fill at the NEXT bar, not the signal bar's close.
+    # Order latency so market orders fill at the NEXT bar, not the signal bar's close.
     # Without this, fills land on the exact close that triggered the cross (zero execution lag)
     # — the apparent +2.1% was entirely that artifact and flips negative under any latency.
-    latency_model=LatencyModel(base_latency_nanos=100_000_000),
+    # With BAR data the result is insensitive to the exact value: any latency from ~1ns up to
+    # one bar fills at the next bar's first quote (no intra-bar quotes exist). LATENCY_MS tunes it.
+    latency_model=LatencyModel(base_latency_nanos=int(os.environ.get("LATENCY_MS", "100")) * 1_000_000),
 )
+print(f"latency: {os.environ.get('LATENCY_MS', '100')}ms")
 engine.add_instrument(instrument)
 engine.add_data(ticks)
 engine.add_data(bid_bars)
