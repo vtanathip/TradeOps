@@ -25,6 +25,7 @@ from decimal import Decimal
 import pandas as pd
 
 from nautilus_trader.backtest.engine import BacktestEngine, BacktestEngineConfig
+from nautilus_trader.backtest.models import LatencyModel
 from nautilus_trader.config import LoggingConfig
 from nautilus_trader.examples.strategies.ema_cross import EMACross, EMACrossConfig
 from nautilus_trader.model import BarType, Money, Venue
@@ -96,6 +97,8 @@ engine.add_venue(
     base_currency=USD,
     starting_balances=[Money(1_000_000, USD)],
     default_leverage=Decimal(100),  # gold CFD style; 1000 oz @ ~$4k = $4M notional -> $40k margin
+    # 100ms latency -> fills at the NEXT bar, not the signal bar's close (no zero-lag execution).
+    latency_model=LatencyModel(base_latency_nanos=100_000_000),
 )
 engine.add_instrument(instrument)
 engine.add_data(ticks)
